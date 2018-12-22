@@ -1,0 +1,64 @@
+{
+	"parser": "babel-eslint",
+	"settings": {
+		"flowtype": {
+			"onlyFilesWithFlowAnnotation": true
+		},
+		"import/resolver": {
+			"node": {
+				"paths": ["src"]
+			}
+		}
+	},
+	"extends": [
+		"react-app", // Create react app rules
+		"eslint-config-with-prettier", // AirBnB rules
+		"plugin:prettier/recommended", // Prettier rules
+		"plugin:flowtype/recommended" // Flow rules
+	],
+	"plugins": [
+		"flowtype",
+		"prettier",
+		"json",
+		"require-jsdoc-except"
+	],
+	"rules": {
+		// Default props checking with flow is broken: https://github.com/yannickcr/eslint-plugin-react/issues/1593
+		"react/default-props-match-prop-types": 0,
+		"no-underscore-dangle": 0,
+		"no-param-reassign": 0,
+		//"one-var": ["error", "consecutive"],
+		"one-var": 0,
+		"newline-after-var": ["error", "always"],
+		"linebreak-style": ["error", "unix"],
+		"react/display-name": 1,
+		"class-methods-use-this": 0,
+		"jsx-a11y/anchor-is-valid": [ "error", {
+			"components": [ "Link" ],
+			"specialLink": [ "to", "hrefLeft", "hrefRight" ],
+			"aspects": [ "noHref", "invalidHref", "preferButton" ]
+		}],
+		"prettier/prettier": [ // use prettier under the hood when executing eslint --fix
+			"error",{
+				"useTabs": true,
+				"tabWidth": 2,
+				"singleQuote": true,
+				"trailingComma": "all",
+				"bracketSpacing": false,
+				"jsxBracketSameLine": true,
+				"parser": "flow"
+			}
+		],
+		"require-jsdoc-except/require-jsdoc": ["error", {
+			"require": {
+				"FunctionDeclaration": true,
+				"MethodDefinition": true,
+				"ClassDeclaration": true,
+				"ArrowFunctionExpression": true,
+				"FunctionExpression": true
+			},
+			"ignore": ["constructor","render", "styles", "mapStateToProps", "reducers", "reducer", "componentWillMount", "componentDidMount", "componentWillReceiveProps", "shouldComponentUpdate", "componentWillUpdate", "componentDidUpdate", "componentWillUnmount"]
+		}],
+		"import/prefer-default-export": 0
+	}
+}

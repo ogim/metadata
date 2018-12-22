@@ -1,0 +1,2 @@
+xattr -lrx . > .metadata
+git add -f .metadata

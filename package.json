@@ -1,0 +1,52 @@
+{
+  "name": "metadata",
+  "version": "1.0.0",
+  "description": "Read & write metadata",
+  "main": "index.js",
+  "preferGlobal": "true",
+  "bin": {
+    "metadata": "./bin/index.js"
+  },
+  "dependencies": {
+    "atob": "^2.1.2",
+    "btoa": "^1.2.1",
+    "co": "^4.6.0",
+    "co-prompt": "^1.0.0",
+    "commander": "^2.19.0",
+    "plist": "^3.0.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.1.5",
+    "@babel/core": "^7.1.6",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@babel/plugin-transform-flow-strip-types": "^7.1.6",
+    "@babel/preset-env": "^7.1.6",
+    "@babel/preset-flow": "^7.0.0",
+    "@babel/register": "^7.0.0",
+    "babel-eslint": "^10.0.1",
+    "babel-plugin-dynamic-import-node": "^2.2.0",
+    "babel-plugin-shebang": "^1.0.0",
+    "eslint": "^5.9.0",
+    "eslint-config-prettier": "^3.3.0",
+    "eslint-config-react-app": "^3.0.5",
+    "eslint-config-with-prettier": "^5.0.0",
+    "eslint-plugin-flowtype": "^3.2.0",
+    "eslint-plugin-json": "^1.2.1",
+    "eslint-plugin-prettier": "^3.0.0",
+    "eslint-plugin-require-jsdoc-except": "^1.3.0",
+    "flow-bin": "^0.86.0",
+    "rimraf": "^2.6.2"
+  },
+  "scripts": {
+    "start": "node -r @babel/register src/index.js",
+    "buildA": "babel src --out-file ./bin/metadata.js --no-babelrc --config-file=./.babelrc-es5 --ignore \"src/**/*.debug.js\",\"src/**/*.test.js\"",
+    "build": "babel -d bin src --no-babelrc --config-file=./.babelrc-es5 --ignore \"src/**/*.debug.js\",\"src/**/*.test.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ogim/metadata.git"
+  },
+  "author": "Pieter Migo",
+  "license": "ISC"
+}

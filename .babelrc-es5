@@ -1,0 +1,12 @@
+{
+  "presets": [["@babel/preset-env",{
+    "targets": {
+      "node": "8"
+    }
+  }],"@babel/preset-flow"],
+  "plugins": ["@babel/transform-flow-strip-types", "@babel/plugin-proposal-object-rest-spread", "dynamic-import-node", ["shebang",     {
+    "replacement": "#!/usr/bin/env node",
+    "force": true
+  }]]
+}
+
