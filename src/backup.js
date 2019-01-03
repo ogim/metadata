@@ -1,11 +1,11 @@
 // @flow
 
 import plist from 'plist';
-import cmd from './lib/cmd';
-import fileList from './lib/fileList';
 import {promises as fs} from 'fs';
 import path from 'path';
 import btoa from 'btoa';
+import fileList from './lib/fileList';
+import cmd from './lib/cmd';
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -13,32 +13,35 @@ import btoa from 'btoa';
  * @param filename
  * @returns {Promise<*>}
  */
-const getMetadata = async (filename: string): Promise<Object>=>{
-	const data = await cmd('mdls', [
-	 	'-plist',
-	 	'-',
-	 	filename,
-	]);
-	return plist.parse(data.toString());
-}
+const getMetadataXattr = async (filename: string, filenameRelative: string): Promise<Object> => {
+	console.info('  ', filenameRelative);
+	const ATTRIBUTES = await cmd('xattr', [filename]);
 
-const getMetadataXattr = async (filename: string): Promise<Object>=>{
+	const attributes = ATTRIBUTES &&
+		ATTRIBUTES
+			.toString()
+			.split('\n')
+	;
+
+	if (! attributes){
+		return [];
+	}
+
+	// read all attributes
 	const data = [];
+	for (const attrName of attributes){
+		if (attrName) {
+			try{
+				const attrValue = await cmd('xattr', ['-px', attrName, filename]);
+				console.info('   **', attrName);
+				data.push([attrName, btoa(attrValue)]);
+			}
+			catch(e){
+				console.error(e);
+			}
 
-	const tags = await cmd('xattr', [
-		filename
-	]);
-
-	tags && tags.toString().split('\n').forEach(async tag=>{
-		if (tag){
-			const metaInfo = await cmd('xattr',[
-				'-px',
-				tag,
-				filename
-			]);
-			data.push([tag, btoa(metaInfo)]);
 		}
-	});
+	}
 
 	return data;
 };
@@ -46,10 +49,15 @@ const getMetadataXattr = async (filename: string): Promise<Object>=>{
 /**
  *
  * @param dir
+ * @param filename
+ * @param isRecursive
  * @returns {Promise<void>}
  */
-export default async (rootDir: string) => {
-	const info = await fileList(rootDir, getMetadataXattr);
+export default async (rootDir: string, filename: string, isRecursive: boolean = false) => {
+	const info = await fileList(rootDir, getMetadataXattr, {isRecursive});
 
-	return await fs.writeFile(path.join(rootDir,'.metadata.json'), JSON.stringify(info));
+	return await fs.writeFile(
+		path.join(rootDir, '.metadata.json'),
+		JSON.stringify(info),
+	);
 };

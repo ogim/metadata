@@ -17,13 +17,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 /**
  * iterates through directory recurisively to create a list of files
  *
- * @param dir
- * @param cb
- * @param rootDir
+ * @param dir string
+ * @param cb function
+ * @param rootDir string
  * @param filelist
  * @returns {Promise<Array>}
  */
-const crawl = async (dir, cb, rootDir = dir, filelist = []) => {
+const crawl = async (dir, cb, options = {}, rootDir = dir, filelist = []) => {
   const files = await _fs.promises.readdir(dir);
 
   for (const file of files) {
@@ -37,12 +37,15 @@ const crawl = async (dir, cb, rootDir = dir, filelist = []) => {
         filename: filenameRelative,
         isDirectory: true
       });
-      filelist = await crawl(filename, cb, rootDir, filelist);
+
+      if (options.isRecursive === true) {
+        filelist = await crawl(filename, cb, options, rootDir, filelist);
+      }
     } else {
       filelist.push({
         filename: filenameRelative,
         isDirectory: false,
-        data: cb && (await cb(filename))
+        data: cb && (await cb(filename, filenameRelative))
       });
     }
   }

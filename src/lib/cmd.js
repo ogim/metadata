@@ -2,7 +2,7 @@
 
 const {spawn} = require('child_process');
 
-const cmdExec = async (cmd: string, attributes: Array<string>) =>
+const cmdExec = (cmd: string, attributes: Array<string>) =>
 	new Promise((resolve, reject) => {
 		const child = spawn(cmd, attributes);
 
@@ -10,7 +10,7 @@ const cmdExec = async (cmd: string, attributes: Array<string>) =>
 			resolve(data);
 		});
 
-		child.on('exit', (code, signal) => {
+		child.on('close', (code, signal) => {
 			if (code === 0) {
 				resolve(null);
 			} else {

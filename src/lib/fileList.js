@@ -7,15 +7,16 @@ import path from 'path';
 /**
  * iterates through directory recurisively to create a list of files
  *
- * @param dir
- * @param cb
- * @param rootDir
+ * @param dir string
+ * @param cb function
+ * @param rootDir string
  * @param filelist
  * @returns {Promise<Array>}
  */
 const crawl = async (
 	dir: string,
 	cb: ?Function,
+	options: {isRecursive: ?boolean} = {},
 	rootDir: string = dir,
 	filelist: ?Array<string> = [],
 ): Promise<Array> => {
@@ -28,12 +29,14 @@ const crawl = async (
 
 		if (stat.isDirectory()) {
 			filelist.push({filename: filenameRelative, isDirectory: true});
-			filelist = await crawl(filename, cb, rootDir, filelist);
+			if (options.isRecursive === true) {
+				filelist = await crawl(filename, cb, options, rootDir, filelist);
+			}
 		} else {
 			filelist.push({
 				filename: filenameRelative,
 				isDirectory: false,
-				data: cb && (await cb(filename)),
+				data: cb && (await cb(filename, filenameRelative)),
 			});
 		}
 	}

@@ -5,12 +5,12 @@ const {
   spawn
 } = require('child_process');
 
-const cmdExec = async (cmd, attributes) => new Promise((resolve, reject) => {
+const cmdExec = (cmd, attributes) => new Promise((resolve, reject) => {
   const child = spawn(cmd, attributes);
   child.stdout.on('data', data => {
     resolve(data);
   });
-  child.on('exit', (code, signal) => {
+  child.on('close', (code, signal) => {
     if (code === 0) {
       resolve(null);
     } else {

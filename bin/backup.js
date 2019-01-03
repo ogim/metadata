@@ -8,15 +8,15 @@ exports.default = void 0;
 
 var _plist = _interopRequireDefault(require("plist"));
 
-var _cmd = _interopRequireDefault(require("./lib/cmd"));
-
-var _fileList = _interopRequireDefault(require("./lib/fileList"));
-
 var _fs = require("fs");
 
 var _path = _interopRequireDefault(require("path"));
 
 var _btoa = _interopRequireDefault(require("btoa"));
+
+var _fileList = _interopRequireDefault(require("./lib/fileList"));
+
+var _cmd = _interopRequireDefault(require("./lib/cmd"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -26,31 +26,45 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  * @param filename
  * @returns {Promise<*>}
  */
-const getMetadata = async filename => {
-  const data = await (0, _cmd.default)('mdls', ['-plist', '-', filename]);
-  return _plist.default.parse(data.toString());
-};
+const getMetadataXattr = async (filename, filenameRelative) => {
+  console.info('  ', filenameRelative);
+  const ATTRIBUTES = await (0, _cmd.default)('xattr', [filename]);
+  const attributes = ATTRIBUTES && ATTRIBUTES.toString().split('\n');
 
-const getMetadataXattr = async filename => {
+  if (!attributes) {
+    return [];
+  } // read all attributes
+
+
   const data = [];
-  const tags = await (0, _cmd.default)('xattr', [filename]);
-  tags && tags.toString().split('\n').forEach(async tag => {
-    if (tag) {
-      const metaInfo = await (0, _cmd.default)('xattr', ['-px', tag, filename]);
-      data.push([tag, (0, _btoa.default)(metaInfo)]);
+
+  for (const attrName of attributes) {
+    if (attrName) {
+      try {
+        const attrValue = await (0, _cmd.default)('xattr', ['-px', attrName, filename]);
+        console.info('   **', attrName);
+        data.push([attrName, (0, _btoa.default)(attrValue)]);
+      } catch (e) {
+        console.error(e);
+      }
     }
-  });
+  }
+
   return data;
 };
 /**
  *
  * @param dir
+ * @param filename
+ * @param isRecursive
  * @returns {Promise<void>}
  */
 
 
-var _default = async rootDir => {
-  const info = await (0, _fileList.default)(rootDir, getMetadataXattr);
+var _default = async (rootDir, filename, isRecursive = false) => {
+  const info = await (0, _fileList.default)(rootDir, getMetadataXattr, {
+    isRecursive
+  });
   return await _fs.promises.writeFile(_path.default.join(rootDir, '.metadata.json'), JSON.stringify(info));
 };
 

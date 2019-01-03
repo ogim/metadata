@@ -1,55 +1,63 @@
 #!/usr/bin/env node
 "use strict";
 
-var _optimist = _interopRequireDefault(require("optimist"));
-
-var _os = _interopRequireDefault(require("os"));
-
-var _path = _interopRequireDefault(require("path"));
-
-var _fs = require("fs");
+var _commander = _interopRequireDefault(require("commander"));
 
 var _backup = _interopRequireDefault(require("./backup"));
 
+var _restore = _interopRequireDefault(require("./restore"));
+
+var _getWorkingDirectory = _interopRequireDefault(require("./lib/getWorkingDirectory"));
+
+var _fs = require("fs");
+
+var _path = _interopRequireDefault(require("path"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const argv = _optimist.default.usage('backup or restore metadata.\nUsage: $0 [-r --backup/restore]').demand(0).describe('r', 'recursive').describe('restore', 'restores metadata').describe('backup', 'create a backup of metadata').boolean(['restore', 'backup', 'r']).argv;
+const defaultFileName = '.metadata.json';
 
-let directory = argv._[0] || process.cwd();
+_commander.default.version('0.1.0', '-v, --version');
 
-(async () => {
-  if (!(argv.restore && !argv.backup) && !(!argv.restore && argv.backup)) {
-    console.info('Nothing to do, needs restore or backup command');
-    argv.help();
-    exit && process.exit(1);
-  } // if (argv._.length !== 1 || typeof directory !== 'string') {
-  // 	console.info('Needs a directory to process');
-  // 	argv.help();
-  // 	exit && process.exit(1)
-  // }
-  // replace tilde sign with homedir
+_commander.default.command('restore [directory]').description('restore metadata to files').option('-r, --recursive', 'recursive').option('-f, --filename <fileName>', 'optionally supply the filename where the metadata is stored').action(async (directory, options) => {
+  const workingDirectory = await (0, _getWorkingDirectory.default)(directory);
 
+  if (workingDirectory) {
+    const filename = options.fileName || defaultFileName;
 
-  if (directory.substring(0, 1) === '~') {
-    directory = directory.replace('~', _os.default.homedir());
-  } // check if the directory is valid
+    try {
+      const stat = await _fs.promises.stat(_path.default.join(workingDirectory, filename));
 
-
-  const stat = await _fs.promises.stat(directory);
-
-  if (!stat.isDirectory()) {
-    console.info('invalid directory', directory);
-    argv.help();
-    exit && process.exit(1);
-  }
-
-  console.log('directory:', directory);
-
-  if (argv.backup) {
-    await (0, _backup.default)(directory);
-  } else if (argv.restore) {//await restore()
+      if (stat.isFile()) {
+        await (0, _restore.default)(workingDirectory, filename, options.recursive);
+      } else {
+        console.error(`${filename} is not a file`);
+        process.exit(1);
+      }
+    } catch (e) {
+      console.error(`${filename} not found`);
+      process.exit(1);
+    }
   } else {
-    console.info('Nothing to do');
-    argv.help();
+    process.exit(1);
   }
-})();
+});
+
+_commander.default.command('backup [directory]').description('backup metadata').option('-r, --recursive', 'recursive').option('-f, --filename <fileName>', 'optionally supply the filename where the metadata is stored').action(async (directory, options) => {
+  const workingDirectory = await (0, _getWorkingDirectory.default)(directory);
+
+  if (workingDirectory) {
+    const filename = options.fileName || defaultFileName;
+    await (0, _backup.default)(workingDirectory, filename, options.recursive);
+  } else {
+    process.exit(1);
+  }
+});
+
+_commander.default.command('*').action(env => {
+  _commander.default.outputHelp();
+
+  process.exit(1);
+});
+
+_commander.default.parse(process.argv);
