@@ -1,8 +1,8 @@
 #----------------------------------------------------------------------------------------------------------------------#
 ### Custom .gitignore ###
 
-version.json
 *.local
+*.local.*
 flow-coverage
 src/test-markup.output.js
 jest-test-results.json
@@ -11,6 +11,7 @@ jest-test-results.json
 .eslintcache-*
 .metadata.json
 !.gitkeep
+package-lock.json
 
 #----------------------------------------------------------------------------------------------------------------------#
 # Created by https://www.gitignore.io/api/macos,linux,windows,node,jetbrains,sublimetext,visualstudiocode

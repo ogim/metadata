@@ -4,9 +4,6 @@
       "node": true
     }
   }],"@babel/preset-flow"],
-  "plugins": ["@babel/transform-flow-strip-types", "@babel/plugin-proposal-object-rest-spread", "dynamic-import-node", ["shebang",     {
-    "replacement": "#!/usr/bin/env node",
-    "force": false
-  }]]
+  "plugins": ["@babel/transform-flow-strip-types", "@babel/plugin-proposal-object-rest-spread", "dynamic-import-node"]
 }
 

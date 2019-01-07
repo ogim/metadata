@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="restore" type="NodeJSConfigurationType" application-parameters="restore -r" path-to-node="node" node-parameters="-r @babel/register" path-to-js-file="index.js" working-dir="$PROJECT_DIR$/src">
+  <configuration default="false" name="restore" type="NodeJSConfigurationType" application-parameters="restore -r" path-to-node="node" node-parameters="-r @babel/register" path-to-js-file="$PROJECT_DIR$/src/index.js" working-dir="$PROJECT_DIR$/src">
     <method v="2" />
   </configuration>
 </component>
