@@ -10,7 +10,7 @@ import path from "path";
 const defaultFileName = '.metadata.json';
 
 program
-	.version('0.1.0', '-v, --version')
+	.version('1.0.2', '-v, --version')
 ;
 
 program

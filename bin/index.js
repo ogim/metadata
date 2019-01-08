@@ -1,2 +1,2 @@
-#!/usr/bin/env/node
-var _package = require('./package');
+#!/usr/bin/env node
+require('./package/index.js');
