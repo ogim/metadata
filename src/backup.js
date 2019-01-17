@@ -1,9 +1,9 @@
 // @flow
 
+import btoa from 'btoa';
 import fileList from './lib/fileList';
 import {metadataType} from './lib/metadata.type';
 import * as ea from './lib/extendedAttributes';
-import btoa from 'btoa';
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -24,8 +24,8 @@ const readMetadataXattr = async (
 	for (const attrName of attributes) {
 		if (attrName) {
 			const test = metadata
-				.find(entry => entry.filename === filenameRelative)
-				.data.find(entry => entry.name === attrName);
+				?.find(entry => entry.filename === filenameRelative)
+				?.data?.find(entry => entry.name === attrName);
 
 			try {
 				const binAttrValue = await ea.getValue(attrName, filename, true),
@@ -41,7 +41,11 @@ const readMetadataXattr = async (
 					);
 				}
 
-				data.push({name: attrName, btoa: btoa(binAttrValue), ascii: asciiAttrValue});
+				data.push({
+					name: attrName,
+					btoa: btoa(binAttrValue),
+					ascii: asciiAttrValue,
+				});
 			} catch (e) {
 				console.error(e);
 			}

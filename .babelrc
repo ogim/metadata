@@ -4,6 +4,6 @@
       "node": true
     }
   }],"@babel/preset-flow"],
-  "plugins": ["@babel/transform-flow-strip-types", "@babel/plugin-proposal-object-rest-spread", "dynamic-import-node"]
+  "plugins": ["@babel/plugin-proposal-optional-chaining","@babel/transform-flow-strip-types", "@babel/plugin-proposal-object-rest-spread", "dynamic-import-node"]
 }
 

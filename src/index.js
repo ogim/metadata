@@ -6,7 +6,6 @@ import backup from './backup';
 import restore from './restore';
 import getWorkingDirectory from './lib/getWorkingDirectory';
 import getMetadata from './lib/getMetadata';
-
 import {version} from './../package';
 
 program

@@ -9,13 +9,13 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
+var _btoa = _interopRequireDefault(require("btoa"));
+
 var _fileList = _interopRequireDefault(require("./lib/fileList"));
 
 var _metadata = require("./lib/metadata.type");
 
 var ea = _interopRequireWildcard(require("./lib/extendedAttributes"));
-
-var _btoa = _interopRequireDefault(require("btoa"));
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -30,7 +30,9 @@ const readMetadataXattr = async (metadata, filename, filenameRelative) => {
 
   for (const attrName of attributes) {
     if (attrName) {
-      const test = metadata.find(entry => entry.filename === filenameRelative).data.find(entry => entry.name === attrName);
+      var _metadata$find, _metadata$find$data;
+
+      const test = metadata === null || metadata === void 0 ? void 0 : (_metadata$find = metadata.find(entry => entry.filename === filenameRelative)) === null || _metadata$find === void 0 ? void 0 : (_metadata$find$data = _metadata$find.data) === null || _metadata$find$data === void 0 ? void 0 : _metadata$find$data.find(entry => entry.name === attrName);
 
       try {
         const binAttrValue = await ea.getValue(attrName, filename, true),

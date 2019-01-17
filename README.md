@@ -7,7 +7,7 @@ ie to be able to store tags of files in a git repository.
 ```
 Install node from https://nodejs.org
 
-$ npm install -g @ogim/metadata
+$ sudo npm install -g @ogim/metadata
 ```
 
 ## Usage
