@@ -1,5 +1,7 @@
 "use strict";
 
+var _interopRequireWildcard = require("@babel/runtime/helpers/interopRequireWildcard");
+
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
 Object.defineProperty(exports, "__esModule", {
@@ -7,17 +9,13 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _plist = _interopRequireDefault(require("plist"));
-
-var _fs = require("fs");
-
-var _path = _interopRequireDefault(require("path"));
-
-var _btoa = _interopRequireDefault(require("btoa"));
-
 var _fileList = _interopRequireDefault(require("./lib/fileList"));
 
-var _cmd = _interopRequireDefault(require("./lib/cmd"));
+var _metadata = require("./lib/metadata.type");
+
+var ea = _interopRequireWildcard(require("./lib/extendedAttributes"));
+
+var _btoa = _interopRequireDefault(require("btoa"));
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -25,24 +23,30 @@ var _cmd = _interopRequireDefault(require("./lib/cmd"));
  * @param filename
  * @returns {Promise<*>}
  */
-const getMetadataXattr = async (filename, filenameRelative) => {
-  console.info('  ', filenameRelative);
-  const ATTRIBUTES = await (0, _cmd.default)('xattr', [filename]);
-  const attributes = ATTRIBUTES && ATTRIBUTES.toString().split('\n');
-
-  if (!attributes) {
-    return [];
-  } // read all attributes
-
+const readMetadataXattr = async (metadata, filename, filenameRelative) => {
+  const attributes = await ea.getAttributesList(filename); // read all attributes
 
   const data = [];
 
   for (const attrName of attributes) {
     if (attrName) {
+      const test = metadata.find(entry => entry.filename === filenameRelative).data.find(entry => entry.name === attrName);
+
       try {
-        const attrValue = await (0, _cmd.default)('xattr', ['-px', attrName, filename]);
-        console.info('   **', attrName);
-        data.push([attrName, (0, _btoa.default)(attrValue)]);
+        const binAttrValue = await ea.getValue(attrName, filename, true),
+              asciiAttrValue = await ea.getValue(attrName, filename, false);
+
+        if (!test) {
+          console.info(`   ADD ${filenameRelative} ${attrName} ${asciiAttrValue}`);
+        } else if ((0, _btoa.default)(binAttrValue) !== test.btoa) {
+          console.info(`   CHANGED ${filenameRelative} ${attrName} ${asciiAttrValue}`);
+        }
+
+        data.push({
+          name: attrName,
+          btoa: (0, _btoa.default)(binAttrValue),
+          ascii: asciiAttrValue
+        });
       } catch (e) {
         console.error(e);
       }
@@ -54,17 +58,17 @@ const getMetadataXattr = async (filename, filenameRelative) => {
 /**
  *
  * @param dir
- * @param filename
+ * @param metadataFilePath
  * @param isRecursive
  * @returns {Promise<void>}
  */
 
 
-var _default = async (rootDir, filename, isRecursive = false) => {
-  const info = await (0, _fileList.default)(rootDir, getMetadataXattr, {
+var _default = async (rootDir, metadata, isRecursive = false) => {
+  const metadataNew = await (0, _fileList.default)(rootDir, readMetadataXattr.bind(null, metadata), {
     isRecursive
   });
-  return await _fs.promises.writeFile(_path.default.join(rootDir, '.metadata.json'), JSON.stringify(info));
+  return metadataNew;
 };
 
 exports.default = _default;
