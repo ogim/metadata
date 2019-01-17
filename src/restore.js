@@ -1,11 +1,10 @@
 // @flow
 
-import plist from 'plist';
-import {promises as fs} from 'fs';
-import path from 'path';
 import atob from 'atob';
+import btoa from 'btoa';
 import fileList from './lib/fileList';
-import cmd from './lib/cmd';
+import {metadataType} from './lib/metadata.type';
+import * as ea from './lib/extendedAttributes';
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -13,26 +12,46 @@ import cmd from './lib/cmd';
  * @param filename
  * @returns {Promise<*>}
  */
-const getMetadataXattr = async (metadata:object, filename: string, filenameRelative: string): Promise<Object> => {
+const setMetadataXattr = async (
+	metadata: metadataType,
+	filename: string,
+	filenameRelative: string,
+): Promise<Object> => {
+	const attributes = metadata.find(
+		entry => entry.filename === filenameRelative,
+	);
 
-	//const tags = await cmd('xattr', [filename]);
-	console.info('  ',filenameRelative);
+	if (!attributes) {
+		return false;
+	}
 
-	const attributes = metadata.find(entry=>{
-		return entry.filename === filenameRelative
-	});
+	// temporarily store the attributes to be written until all attributes have been read and cleared
+	const writeAttributesAfterClear = [];
 
-	if (!attributes){return false;}
+	for (const attr of attributes.data) {
+		const {name: attrName, btoa: btoaAttrValue, ascii: attrValueASCII} = attr;
+
+		const btoaAttrValueFile = btoa(
+			(await ea.getValue(attrName, filename, true)) || '',
+		);
+
+		if (btoaAttrValueFile !== btoaAttrValue) {
+			console.info(
+				`   write ${filenameRelative} ${attrName} ${attrValueASCII}`,
+			);
+			writeAttributesAfterClear.push(
+				ea.setValue.bind(null, attrName, atob(btoaAttrValue), filename),
+			);
+		}
+	}
 
 	// clear all attributes
-	await cmd('xattr', ['-c', filename]);
-
-	// set attributes
-	for (const attr of attributes.data){
-		const [attrName, attrValue] = attr;
-		console.info('   **', attrName);
-		await cmd('xattr', ['-wx', attrName, atob(attrValue), filename]);
+	if (attributes.data.length === 0 || writeAttributesAfterClear.length > 0) {
+		await ea.clear(filename);
 	}
+
+	// write all attributes, dont await the result
+	writeAttributesAfterClear.every(call => call());
 
 	return true;
 };
@@ -40,21 +59,23 @@ const getMetadataXattr = async (metadata:object, filename: string, filenameRelat
 /**
  *
  * @param dir
- * @param filename
+ * @param metadataFilePath
  * @param isRecursive
  * @returns {Promise<void>}
  */
-export default async (rootDir: string, filename: string, isRecursive: boolean = false) => {
-	const metadata = await fs.readFile(path.join(rootDir, filename));
-
-	try{
-		const metadataJSON=JSON.parse(metadata.toString());
-
-		const info = await fileList(rootDir, getMetadataXattr.bind(null,metadataJSON), {isRecursive});
-	}
-	catch(e){
-		console.error('invalid metadata',e);
+export default async (
+	rootDir: string,
+	metadata: metadataType,
+	isRecursive: boolean = false,
+) => {
+	try {
+		const info = await fileList(
+			rootDir,
+			setMetadataXattr.bind(null, metadata),
+			{isRecursive},
+		);
+	} catch (e) {
+		console.error('unknown error', e);
 		process.exit(1);
 	}
-
 };

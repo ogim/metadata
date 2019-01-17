@@ -14,13 +14,14 @@ const cmdExec = (cmd: string, attributes: Array<string>) =>
 			if (code === 0) {
 				resolve(null);
 			} else {
-				console.log(
-					`child process exited with code ${code} and signal ${signal}`,
+				console.error(
+					`cmd ${cmd} ${attributes} process exited with code ${code} and signal ${signal}`,
 				);
 			}
 		});
 
 		child.stderr.on('data', data => {
+			console.error(`Error ${cmd} ${attributes} ${data.toString()}`);
 			reject(data);
 		});
 	});

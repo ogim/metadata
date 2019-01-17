@@ -1,11 +1,9 @@
 // @flow
 
-import plist from 'plist';
-import {promises as fs} from 'fs';
-import path from 'path';
-import btoa from 'btoa';
 import fileList from './lib/fileList';
-import cmd from './lib/cmd';
+import {metadataType} from './lib/metadata.type';
+import * as ea from './lib/extendedAttributes';
+import btoa from 'btoa';
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -13,33 +11,40 @@ import cmd from './lib/cmd';
  * @param filename
  * @returns {Promise<*>}
  */
-const getMetadataXattr = async (filename: string, filenameRelative: string): Promise<Object> => {
-	console.info('  ', filenameRelative);
-	const ATTRIBUTES = await cmd('xattr', [filename]);
-
-	const attributes = ATTRIBUTES &&
-		ATTRIBUTES
-			.toString()
-			.split('\n')
-	;
-
-	if (! attributes){
-		return [];
-	}
+const readMetadataXattr = async (
+	metadata: metadataType,
+	filename: string,
+	filenameRelative: string,
+): Promise<Object> => {
+	const attributes = await ea.getAttributesList(filename);
 
 	// read all attributes
 	const data = [];
-	for (const attrName of attributes){
+
+	for (const attrName of attributes) {
 		if (attrName) {
-			try{
-				const attrValue = await cmd('xattr', ['-px', attrName, filename]);
-				console.info('   **', attrName);
-				data.push([attrName, btoa(attrValue)]);
-			}
-			catch(e){
+			const test = metadata
+				.find(entry => entry.filename === filenameRelative)
+				.data.find(entry => entry.name === attrName);
+
+			try {
+				const binAttrValue = await ea.getValue(attrName, filename, true),
+					asciiAttrValue = await ea.getValue(attrName, filename, false);
+
+				if (!test) {
+					console.info(
+						`   ADD ${filenameRelative} ${attrName} ${asciiAttrValue}`,
+					);
+				} else if (btoa(binAttrValue) !== test.btoa) {
+					console.info(
+						`   CHANGED ${filenameRelative} ${attrName} ${asciiAttrValue}`,
+					);
+				}
+
+				data.push({name: attrName, btoa: btoa(binAttrValue), ascii: asciiAttrValue});
+			} catch (e) {
 				console.error(e);
 			}
-
 		}
 	}
 
@@ -49,15 +54,20 @@ const getMetadataXattr = async (filename: string, filenameRelative: string): Pro
 /**
  *
  * @param dir
- * @param filename
+ * @param metadataFilePath
  * @param isRecursive
  * @returns {Promise<void>}
  */
-export default async (rootDir: string, filename: string, isRecursive: boolean = false) => {
-	const info = await fileList(rootDir, getMetadataXattr, {isRecursive});
-
-	return await fs.writeFile(
-		path.join(rootDir, '.metadata.json'),
-		JSON.stringify(info),
+export default async (
+	rootDir: string,
+	metadata: metadataType,
+	isRecursive: boolean = false,
+) => {
+	const metadataNew = await fileList(
+		rootDir,
+		readMetadataXattr.bind(null, metadata),
+		{isRecursive},
 	);
+
+	return metadataNew;
 };
