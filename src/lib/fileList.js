@@ -3,23 +3,24 @@
 
 import {promises as fs} from 'fs';
 import path from 'path';
+import backup from "../backup";
 
 /**
  * iterates through directory recurisively to create a list of files
  *
  * @param dir string
- * @param cb function
+ * @param cb Promise
  * @param rootDir string
- * @param filelist
- * @returns {Promise<Array>}
+ * @param paralel
+ * @returns {Promise<Array<Promise<all>>>}
  */
 const crawl = async (
 	dir: string,
-	cb: ?Function,
+	cb: ?Promise,
 	options: {isRecursive: ?boolean} = {},
 	rootDir: string = dir,
-	filelist: ?Array<string> = [],
-): Promise<Array> => {
+	paralel: ?Array<string> = [],
+): Promise<Array<Promise>> => {
 	const files = await fs.readdir(dir);
 
 	for (const file of files) {
@@ -28,20 +29,31 @@ const crawl = async (
 		const filenameRelative = filename.substr(rootDir.length + 1);
 
 		if (stat.isDirectory()) {
-			filelist.push({filename: filenameRelative, isDirectory: true});
 			if (options.isRecursive === true) {
-				filelist = await crawl(filename, cb, options, rootDir, filelist);
+				paralel = await crawl(filename, cb, options, rootDir, paralel);
 			}
-		} else {
-			filelist.push({
-				filename: filenameRelative,
-				isDirectory: false,
-				data: cb && (await cb(filename, filenameRelative)),
-			});
+		} else if (cb) {
+			paralel.push(cb(filename, filenameRelative));
 		}
 	}
 
-	return filelist;
+	return paralel;
 };
 
-export default crawl;
+/**
+ * crawls the directory and execute the cb promises in paralel
+ *
+ * @param dir
+ * @param cb
+ * @param options
+ * @returns {Promise<$TupleMap<Array<Promise>, typeof $await>>}
+ */
+export default async(
+	dir: string,
+	cb: ?Promise,
+	options: {isRecursive: ?boolean} = {},
+) => {
+	const paralelProcesses = await crawl(dir, cb, options);
+
+	return Promise.all(paralelProcesses);
+}

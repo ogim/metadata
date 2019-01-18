@@ -52,7 +52,12 @@ const readMetadataXattr = async (
 		}
 	}
 
-	return data;
+	// we are only interested in the metadata, so if there is no metadata the file is not listed
+	if (data.length === 0) {
+		return null;
+	}
+
+	return {filename: filenameRelative, data};
 };
 
 /**
@@ -62,16 +67,14 @@ const readMetadataXattr = async (
  * @param isRecursive
  * @returns {Promise<void>}
  */
-export default async (
+export default (
 	rootDir: string,
 	metadata: metadataType,
 	isRecursive: boolean = false,
 ) => {
-	const metadataNew = await fileList(
+	return fileList(
 		rootDir,
 		readMetadataXattr.bind(null, metadata),
 		{isRecursive},
 	);
-
-	return metadataNew;
 };

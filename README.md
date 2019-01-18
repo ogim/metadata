@@ -2,6 +2,8 @@
 Backup and restore metadata of files.
 ie to be able to store tags of files in a git repository.
 
+Sorry, MAC only ...
+
 ## Install
 
 ```

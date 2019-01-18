@@ -63,19 +63,8 @@ const setMetadataXattr = async (
  * @param isRecursive
  * @returns {Promise<void>}
  */
-export default async (
+export default (
 	rootDir: string,
 	metadata: metadataType,
 	isRecursive: boolean = false,
-) => {
-	try {
-		const info = await fileList(
-			rootDir,
-			setMetadataXattr.bind(null, metadata),
-			{isRecursive},
-		);
-	} catch (e) {
-		console.error('unknown error', e);
-		process.exit(1);
-	}
-};
+) => fileList(rootDir, setMetadataXattr.bind(null, metadata), {isRecursive});
