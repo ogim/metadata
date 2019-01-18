@@ -3,7 +3,6 @@
 
 import {promises as fs} from 'fs';
 import path from 'path';
-import backup from "../backup";
 
 /**
  * iterates through directory recurisively to create a list of files
@@ -11,7 +10,7 @@ import backup from "../backup";
  * @param dir string
  * @param cb Promise
  * @param rootDir string
- * @param paralel
+ * @param process
  * @returns {Promise<Array<Promise<all>>>}
  */
 const crawl = async (
@@ -19,8 +18,8 @@ const crawl = async (
 	cb: ?Promise,
 	options: {isRecursive: ?boolean} = {},
 	rootDir: string = dir,
-	paralel: ?Array<string> = [],
-): Promise<Array<Promise>> => {
+	process: ?Array<string> = [],
+): Promise<Array<Promise<all>>> => {
 	const files = await fs.readdir(dir);
 
 	for (const file of files) {
@@ -30,14 +29,17 @@ const crawl = async (
 
 		if (stat.isDirectory()) {
 			if (options.isRecursive === true) {
-				paralel = await crawl(filename, cb, options, rootDir, paralel);
+				process = await crawl(filename, cb, options, rootDir, process);
 			}
 		} else if (cb) {
-			paralel.push(cb(filename, filenameRelative));
+			process.push(cb(filename, filenameRelative));
+		}
+		else{
+			process.push({filename, filenameRelative});
 		}
 	}
 
-	return paralel;
+	return process;
 };
 
 /**
@@ -52,7 +54,7 @@ export default async(
 	dir: string,
 	cb: ?Promise,
 	options: {isRecursive: ?boolean} = {},
-) => {
+): Promise<Array<all>> => {
 	const paralelProcesses = await crawl(dir, cb, options);
 
 	return Promise.all(paralelProcesses);

@@ -2,11 +2,13 @@
 
 import atob from 'atob';
 import btoa from 'btoa';
+import Progress from 'cli-progress';
 import fileList from './lib/fileList';
 import {metadataType} from './lib/metadata.type';
+import {optionsType} from './lib/options.type';
 import * as ea from './lib/extendedAttributes';
-import getWorkingDirectory from "./lib/getWorkingDirectory";
-import readMetadataJSON from "./lib/readMetadataJSON";
+import getWorkingDirectory from './lib/getWorkingDirectory';
+import readMetadataJSON from './lib/readMetadataJSON';
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -16,46 +18,55 @@ import readMetadataJSON from "./lib/readMetadataJSON";
  */
 const setMetadataXattr = async (
 	metadata: metadataType,
+	options: optionsType,
+	bar: Function,
 	filename: string,
 	filenameRelative: string,
 ): Promise<Object> => {
-	const attributes = metadata.find(
-		entry => entry.filename === filenameRelative,
-	);
+	bar.increment(1, {file: filenameRelative});
 
-	if (!attributes) {
-		return false;
-	}
+	const attributes = metadata.find(
+			entry => entry.filename === filenameRelative,
+		),
+		data = [];
 
 	// temporarily store the attributes to be written until all attributes have been read and cleared
 	const writeAttributesAfterClear = [];
 
-	for (const attr of attributes.data) {
-		const {name: attrName, btoa: btoaAttrValue, ascii: attrValueASCII} = attr;
+	for (const attr of attributes?.data || []) {
+		const {name: attrName, btoa: btoaAttrValue, ascii: asciiAttrValue} = attr;
 
-		const btoaAttrValueFile = btoa(
-			(await ea.getValue(attrName, filename, true)) || '',
-		);
+		if (options.alltags !== true && attrName !== 'com.apple.metadata:_kMDItemUserTags'){
+			//do nothing
+		}
+		else{
+			const btoaAttrValueFile = btoa(
+				(await ea.getValue(attrName, filename, true)) || '',
+			);
 
-		if (btoaAttrValueFile !== btoaAttrValue) {
-			console.info(
-				`   write ${filenameRelative} ${attrName} ${attrValueASCII}`,
-			);
-			writeAttributesAfterClear.push(
-				ea.setValue.bind(null, attrName, atob(btoaAttrValue), filename),
-			);
+			if (btoaAttrValueFile !== btoaAttrValue) {
+				data.push({
+					name: attrName,
+					btoa: btoaAttrValue,
+					ascii: asciiAttrValue,
+					action: 'WRITE',
+				});
+				writeAttributesAfterClear.push(
+					ea.setValue.bind(null, attrName, atob(btoaAttrValue), filename),
+				);
+			}
 		}
 	}
 
 	// clear all attributes
-	if (attributes.data.length === 0 || writeAttributesAfterClear.length > 0) {
+	if (attributes?.data.length === 0 || writeAttributesAfterClear.length > 0) {
 		await ea.clear(filename);
 	}
 
 	// write all attributes, dont await the result
 	writeAttributesAfterClear.every(call => call());
 
-	return true;
+	return {filename: filenameRelative, data};
 };
 
 /**
@@ -66,21 +77,45 @@ const setMetadataXattr = async (
  */
 export default async (
 	directory: string,
-	options: {recursive: boolean, filename: string},
+	options: optionsType,
 ) => {
 	const workingDirectory = await getWorkingDirectory(directory);
 
 	if (workingDirectory) {
 		console.time('processtime');
 
-		const {metadata} = await readMetadataJSON(workingDirectory, options.filename);
+		const {metadata} = await readMetadataJSON(
+			workingDirectory,
+			options.filename,
+		);
+
+		const bar = new Progress.Bar(
+			{
+				format:
+					'progress [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} | {file}',
+			},
+			Progress.Presets.shades_classic,
+		);
+
+		bar.start(
+			(await fileList(workingDirectory, null, {isRecursive: options.recursive}))
+				.length,
+			0,
+			{
+				file: '',
+			},
+		);
 
 		if (metadata != null) {
-			await fileList(
+			const report = await fileList(
 				workingDirectory,
-				setMetadataXattr.bind(null, metadata),
+				setMetadataXattr.bind(null, metadata, options, bar),
 				{isRecursive: options.recursive},
 			);
+
+			bar.stop();
+
+			// todo present a report
 
 			console.timeEnd('processtime');
 		} else {
@@ -90,6 +125,4 @@ export default async (
 		console.error(`directory [${workingDirectory}] not found`);
 		process.exit(1);
 	}
-
-
-}
+};

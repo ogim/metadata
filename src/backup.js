@@ -2,12 +2,13 @@
 
 import btoa from 'btoa';
 import {promises as fs} from 'fs';
+import Progress from 'cli-progress';
 import fileList from './lib/fileList';
 import {metadataType} from './lib/metadata.type';
+import {optionsType} from './lib/options.type';
 import * as ea from './lib/extendedAttributes';
 import getWorkingDirectory from './lib/getWorkingDirectory';
 import readMetadataJSON from './lib/readMetadataJSON';
-import program from "commander";
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -17,16 +18,22 @@ import program from "commander";
  */
 const readMetadataXattr = async (
 	metadata: metadataType,
+	options: optionsType,
+	bar: Function,
 	filename: string,
 	filenameRelative: string,
 ): Promise<Object> => {
-	const attributes = await ea.getAttributesList(filename);
+	bar.increment(1, {file: filenameRelative});
+
+	const attributes = await ea.getAttributesList(filename),
+		data = [];
 
 	// read all attributes
-	const data = [];
-
 	for (const attrName of attributes) {
-		if (attrName) {
+		if (options.alltags !== true && attrName !== 'com.apple.metadata:_kMDItemUserTags'){
+			//do nothing
+		}
+		else if (attrName) {
 			const test = metadata
 				?.find(entry => entry.filename === filenameRelative)
 				?.data?.find(entry => entry.name === attrName);
@@ -35,20 +42,19 @@ const readMetadataXattr = async (
 				const binAttrValue = await ea.getValue(attrName, filename, true),
 					asciiAttrValue = await ea.getValue(attrName, filename, false);
 
+				let action = null;
+
 				if (!test) {
-					console.info(
-						`   ADD ${filenameRelative} ${attrName} ${asciiAttrValue}`,
-					);
+					action = 'ADD';
 				} else if (btoa(binAttrValue) !== test.btoa) {
-					console.info(
-						`   CHANGED ${filenameRelative} ${attrName} ${asciiAttrValue}`,
-					);
+					action = 'CHANGED';
 				}
 
 				data.push({
 					name: attrName,
 					btoa: btoa(binAttrValue),
 					ascii: asciiAttrValue,
+					action,
 				});
 			} catch (e) {
 				console.error(e);
@@ -70,10 +76,7 @@ const readMetadataXattr = async (
  * @param directory
  * @param options
  */
-export default async (
-	directory: string,
-	options: {recursive: boolean, filename: string},
-) => {
+export default async (directory: string, options: optionsType) => {
 	const workingDirectory = await getWorkingDirectory(directory);
 
 	if (workingDirectory) {
@@ -84,11 +87,30 @@ export default async (
 			options.filename,
 		);
 
+		const bar = new Progress.Bar(
+			{
+				format:
+					'progress [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} | {file}',
+			},
+			Progress.Presets.shades_classic,
+		);
+
+		bar.start(
+			(await fileList(workingDirectory, null, {isRecursive: options.recursive}))
+				.length,
+			0,
+			{
+				file: '',
+			},
+		);
+
 		const metadataNew = await fileList(
 			workingDirectory,
-			readMetadataXattr.bind(null, metadata),
+			readMetadataXattr.bind(null, metadata, options, bar),
 			{isRecursive: options.recursive},
 		);
+
+		bar.stop();
 
 		// compact the array with results and write to disk
 		console.info(`write metadata to ${metadataFN}`);
@@ -96,6 +118,8 @@ export default async (
 			metadataFN,
 			JSON.stringify(metadataNew?.filter(obj => obj)),
 		);
+
+		// todo present a report
 
 		console.timeEnd('processtime');
 	} else {
