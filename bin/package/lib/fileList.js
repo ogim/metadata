@@ -11,18 +11,20 @@ var _fs = require("fs");
 
 var _path = _interopRequireDefault(require("path"));
 
+var _backup = _interopRequireDefault(require("../backup"));
+
 /* eslint-disable no-restricted-syntax, no-await-in-loop */
 
 /**
  * iterates through directory recurisively to create a list of files
  *
  * @param dir string
- * @param cb function
+ * @param cb Promise
  * @param rootDir string
- * @param filelist
- * @returns {Promise<Array>}
+ * @param paralel
+ * @returns {Promise<Array<Promise<all>>>}
  */
-const crawl = async (dir, cb, options = {}, rootDir = dir, filelist = []) => {
+const crawl = async (dir, cb, options = {}, rootDir = dir, paralel = []) => {
   const files = await _fs.promises.readdir(dir);
 
   for (const file of files) {
@@ -32,25 +34,29 @@ const crawl = async (dir, cb, options = {}, rootDir = dir, filelist = []) => {
     const filenameRelative = filename.substr(rootDir.length + 1);
 
     if (stat.isDirectory()) {
-      filelist.push({
-        filename: filenameRelative,
-        isDirectory: true
-      });
-
       if (options.isRecursive === true) {
-        filelist = await crawl(filename, cb, options, rootDir, filelist);
+        paralel = await crawl(filename, cb, options, rootDir, paralel);
       }
-    } else {
-      filelist.push({
-        filename: filenameRelative,
-        isDirectory: false,
-        data: cb && (await cb(filename, filenameRelative))
-      });
+    } else if (cb) {
+      paralel.push(cb(filename, filenameRelative));
     }
   }
 
-  return filelist;
+  return paralel;
+};
+/**
+ * crawls the directory and execute the cb promises in paralel
+ *
+ * @param dir
+ * @param cb
+ * @param options
+ * @returns {Promise<$TupleMap<Array<Promise>, typeof $await>>}
+ */
+
+
+var _default = async (dir, cb, options = {}) => {
+  const paralelProcesses = await crawl(dir, cb, options);
+  return Promise.all(paralelProcesses);
 };
 
-var _default = crawl;
 exports.default = _default;

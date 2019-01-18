@@ -12,6 +12,13 @@ var _fs = require("fs");
 var _path = _interopRequireDefault(require("path"));
 
 const defaultFileName = '.metadata.json';
+/**
+ * returns earlier stored metadata from json file
+ *
+ * @param directory
+ * @param filename
+ * @returns {Promise<*>}
+ */
 
 var _default = async (directory, filename) => {
   const metadataFN = _path.default.join(directory, filename || defaultFileName);

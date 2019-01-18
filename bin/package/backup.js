@@ -11,11 +11,19 @@ exports.default = void 0;
 
 var _btoa = _interopRequireDefault(require("btoa"));
 
+var _fs = require("fs");
+
 var _fileList = _interopRequireDefault(require("./lib/fileList"));
 
 var _metadata = require("./lib/metadata.type");
 
 var ea = _interopRequireWildcard(require("./lib/extendedAttributes"));
+
+var _getWorkingDirectory = _interopRequireDefault(require("./lib/getWorkingDirectory"));
+
+var _readMetadataJSON = _interopRequireDefault(require("./lib/readMetadataJSON"));
+
+var _commander = _interopRequireDefault(require("commander"));
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -53,24 +61,46 @@ const readMetadataXattr = async (metadata, filename, filenameRelative) => {
         console.error(e);
       }
     }
+  } // we are only interested in the metadata, so if there is no metadata the file is not listed
+
+
+  if (data.length === 0) {
+    return null;
   }
 
-  return data;
+  return {
+    filename: filenameRelative,
+    data
+  };
 };
 /**
+ * Backup extended attributes from directory of files (recursively)
  *
- * @param dir
- * @param metadataFilePath
- * @param isRecursive
- * @returns {Promise<void>}
+ * @param directory
+ * @param options
  */
 
 
-var _default = async (rootDir, metadata, isRecursive = false) => {
-  const metadataNew = await (0, _fileList.default)(rootDir, readMetadataXattr.bind(null, metadata), {
-    isRecursive
-  });
-  return metadataNew;
+var _default = async (directory, options) => {
+  const workingDirectory = await (0, _getWorkingDirectory.default)(directory);
+
+  if (workingDirectory) {
+    console.time('processtime');
+    const {
+      metadataFN,
+      metadata
+    } = await (0, _readMetadataJSON.default)(workingDirectory, options.filename);
+    const metadataNew = await (0, _fileList.default)(workingDirectory, readMetadataXattr.bind(null, metadata), {
+      isRecursive: options.recursive
+    }); // compact the array with results and write to disk
+
+    console.info(`write metadata to ${metadataFN}`);
+    await _fs.promises.writeFile(metadataFN, JSON.stringify(metadataNew === null || metadataNew === void 0 ? void 0 : metadataNew.filter(obj => obj)));
+    console.timeEnd('processtime');
+  } else {
+    console.error(`directory ${workingDirectory} not found`);
+    process.exit(1);
+  }
 };
 
 exports.default = _default;

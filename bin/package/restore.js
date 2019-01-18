@@ -19,6 +19,10 @@ var _metadata = require("./lib/metadata.type");
 
 var ea = _interopRequireWildcard(require("./lib/extendedAttributes"));
 
+var _getWorkingDirectory = _interopRequireDefault(require("./lib/getWorkingDirectory"));
+
+var _readMetadataJSON = _interopRequireDefault(require("./lib/readMetadataJSON"));
+
 /**
  * retrieves all metadata for a file and parse it as json
  *
@@ -59,21 +63,32 @@ const setMetadataXattr = async (metadata, filename, filenameRelative) => {
   return true;
 };
 /**
+ * Restore extended attributes to directory of files (recursively)
  *
- * @param dir
- * @param metadataFilePath
- * @param isRecursive
- * @returns {Promise<void>}
+ * @param directory
+ * @param options
  */
 
 
-var _default = async (rootDir, metadata, isRecursive = false) => {
-  try {
-    const info = await (0, _fileList.default)(rootDir, setMetadataXattr.bind(null, metadata), {
-      isRecursive
-    });
-  } catch (e) {
-    console.error('unknown error', e);
+var _default = async (directory, options) => {
+  const workingDirectory = await (0, _getWorkingDirectory.default)(directory);
+
+  if (workingDirectory) {
+    console.time('processtime');
+    const {
+      metadata
+    } = await (0, _readMetadataJSON.default)(workingDirectory, options.filename);
+
+    if (metadata != null) {
+      await (0, _fileList.default)(workingDirectory, setMetadataXattr.bind(null, metadata), {
+        isRecursive: options.recursive
+      });
+      console.timeEnd('processtime');
+    } else {
+      process.exit(1);
+    }
+  } else {
+    console.error(`directory [${workingDirectory}] not found`);
     process.exit(1);
   }
 };
