@@ -5,6 +5,13 @@ import path from 'path';
 
 const defaultFileName = '.metadata.json';
 
+/**
+ * returns earlier stored metadata from json file
+ *
+ * @param directory
+ * @param filename
+ * @returns {Promise<*>}
+ */
 export default async (directory: string, filename: string) => {
 	const metadataFN = path.join(directory, filename || defaultFileName);
 

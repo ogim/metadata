@@ -5,6 +5,8 @@ import btoa from 'btoa';
 import fileList from './lib/fileList';
 import {metadataType} from './lib/metadata.type';
 import * as ea from './lib/extendedAttributes';
+import getWorkingDirectory from "./lib/getWorkingDirectory";
+import readMetadataJSON from "./lib/readMetadataJSON";
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -57,14 +59,37 @@ const setMetadataXattr = async (
 };
 
 /**
+ * Restore extended attributes to directory of files (recursively)
  *
- * @param dir
- * @param metadataFilePath
- * @param isRecursive
- * @returns {Promise<void>}
+ * @param directory
+ * @param options
  */
-export default (
-	rootDir: string,
-	metadata: metadataType,
-	isRecursive: boolean = false,
-) => fileList(rootDir, setMetadataXattr.bind(null, metadata), {isRecursive});
+export default async (
+	directory: string,
+	options: {recursive: boolean, filename: string},
+) => {
+	const workingDirectory = await getWorkingDirectory(directory);
+
+	if (workingDirectory) {
+		console.time('processtime');
+
+		const {metadata} = await readMetadataJSON(workingDirectory, options.filename);
+
+		if (metadata != null) {
+			await fileList(
+				workingDirectory,
+				setMetadataXattr.bind(null, metadata),
+				{isRecursive: options.recursive},
+			);
+
+			console.timeEnd('processtime');
+		} else {
+			process.exit(1);
+		}
+	} else {
+		console.error(`directory [${workingDirectory}] not found`);
+		process.exit(1);
+	}
+
+
+}

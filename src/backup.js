@@ -1,9 +1,13 @@
 // @flow
 
 import btoa from 'btoa';
+import {promises as fs} from 'fs';
 import fileList from './lib/fileList';
 import {metadataType} from './lib/metadata.type';
 import * as ea from './lib/extendedAttributes';
+import getWorkingDirectory from './lib/getWorkingDirectory';
+import readMetadataJSON from './lib/readMetadataJSON';
+import program from "commander";
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -61,20 +65,41 @@ const readMetadataXattr = async (
 };
 
 /**
+ * Backup extended attributes from directory of files (recursively)
  *
- * @param dir
- * @param metadataFilePath
- * @param isRecursive
- * @returns {Promise<void>}
+ * @param directory
+ * @param options
  */
-export default (
-	rootDir: string,
-	metadata: metadataType,
-	isRecursive: boolean = false,
+export default async (
+	directory: string,
+	options: {recursive: boolean, filename: string},
 ) => {
-	return fileList(
-		rootDir,
-		readMetadataXattr.bind(null, metadata),
-		{isRecursive},
-	);
+	const workingDirectory = await getWorkingDirectory(directory);
+
+	if (workingDirectory) {
+		console.time('processtime');
+
+		const {metadataFN, metadata} = await readMetadataJSON(
+			workingDirectory,
+			options.filename,
+		);
+
+		const metadataNew = await fileList(
+			workingDirectory,
+			readMetadataXattr.bind(null, metadata),
+			{isRecursive: options.recursive},
+		);
+
+		// compact the array with results and write to disk
+		console.info(`write metadata to ${metadataFN}`);
+		await fs.writeFile(
+			metadataFN,
+			JSON.stringify(metadataNew?.filter(obj => obj)),
+		);
+
+		console.timeEnd('processtime');
+	} else {
+		console.error(`directory ${workingDirectory} not found`);
+		process.exit(1);
+	}
 };
