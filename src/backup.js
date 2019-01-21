@@ -26,8 +26,6 @@ const readMetadataXattr = async (
 ): Promise<Object> => {
 	bar.increment(1, {file: filenameRelative});
 
-	// console.log('==>', filename);
-
 	const attributes = await ea.getAttributesList(filename),
 		data = [];
 
@@ -67,11 +65,6 @@ const readMetadataXattr = async (
 				console.error(e);
 			}
 		}
-	}
-
-	// we are only interested in the metadata, so if there is no metadata the file is not listed
-	if (data.length === 0) {
-		return null;
 	}
 
 	return {filename: filenameRelative, data};

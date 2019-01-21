@@ -55,8 +55,6 @@ export default async(
 	cb: ?Promise,
 	options: {isRecursive: ?boolean} = {},
 ): Promise<Array<all>> => {
-	// uniform dir to end on /
-	dir = path.join(dir, '/');
 
 	const paralelProcesses = await crawl(dir, cb, options);
 
