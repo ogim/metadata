@@ -13,10 +13,14 @@ var _fs = require("fs");
 
 var _os = _interopRequireDefault(require("os"));
 
+var _path = _interopRequireDefault(require("path"));
+
 var _default = async (directory = process.cwd()) => {
   // replace tilde sign with homedir
   if (directory.substring(0, 1) === '~') {
     directory = directory.replace('~', _os.default.homedir());
+  } else if (directory.substring(0, 1) === '.') {
+    directory = _path.default.join(process.cwd(), directory);
   } // check if the directory is valid
 
 
@@ -32,11 +36,10 @@ var _default = async (directory = process.cwd()) => {
     _commander.default.outputHelp();
 
     process.exit(1);
-  }
+  } // uniform dir to end on /
 
-  _commander.default.outputHelp();
 
-  console.log('workingDirectory:', directory);
+  directory = _path.default.join(directory, '/');
   return directory;
 };
 

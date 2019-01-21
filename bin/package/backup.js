@@ -13,9 +13,13 @@ var _btoa = _interopRequireDefault(require("btoa"));
 
 var _fs = require("fs");
 
+var _cliProgress = _interopRequireDefault(require("cli-progress"));
+
 var _fileList = _interopRequireDefault(require("./lib/fileList"));
 
 var _metadata = require("./lib/metadata.type");
+
+var _options = require("./lib/options.type");
 
 var ea = _interopRequireWildcard(require("./lib/extendedAttributes"));
 
@@ -23,7 +27,7 @@ var _getWorkingDirectory = _interopRequireDefault(require("./lib/getWorkingDirec
 
 var _readMetadataJSON = _interopRequireDefault(require("./lib/readMetadataJSON"));
 
-var _commander = _interopRequireDefault(require("commander"));
+var _printReport = _interopRequireDefault(require("./printReport"));
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -31,13 +35,16 @@ var _commander = _interopRequireDefault(require("commander"));
  * @param filename
  * @returns {Promise<*>}
  */
-const readMetadataXattr = async (metadata, filename, filenameRelative) => {
-  const attributes = await ea.getAttributesList(filename); // read all attributes
-
-  const data = [];
+const readMetadataXattr = async (metadata, options, bar, filename, filenameRelative) => {
+  bar.increment(1, {
+    file: filenameRelative
+  });
+  const attributes = await ea.getAttributesList(filename),
+        data = []; // read all attributes
 
   for (const attrName of attributes) {
-    if (attrName) {
+    if (options.alltags !== true && attrName !== 'com.apple.metadata:_kMDItemUserTags') {// do nothing
+    } else if (attrName) {
       var _metadata$find, _metadata$find$data;
 
       const test = metadata === null || metadata === void 0 ? void 0 : (_metadata$find = metadata.find(entry => entry.filename === filenameRelative)) === null || _metadata$find === void 0 ? void 0 : (_metadata$find$data = _metadata$find.data) === null || _metadata$find$data === void 0 ? void 0 : _metadata$find$data.find(entry => entry.name === attrName);
@@ -45,27 +52,26 @@ const readMetadataXattr = async (metadata, filename, filenameRelative) => {
       try {
         const binAttrValue = await ea.getValue(attrName, filename, true),
               asciiAttrValue = await ea.getValue(attrName, filename, false);
+        let action = null;
 
         if (!test) {
-          console.info(`   ADD ${filenameRelative} ${attrName} ${asciiAttrValue}`);
+          action = 'ADD';
         } else if ((0, _btoa.default)(binAttrValue) !== test.btoa) {
-          console.info(`   CHANGED ${filenameRelative} ${attrName} ${asciiAttrValue}`);
+          action = 'CHANGED';
+        } else {
+          action = 'EQUAL';
         }
 
         data.push({
           name: attrName,
           btoa: (0, _btoa.default)(binAttrValue),
-          ascii: asciiAttrValue
+          ascii: asciiAttrValue,
+          action
         });
       } catch (e) {
         console.error(e);
       }
     }
-  } // we are only interested in the metadata, so if there is no metadata the file is not listed
-
-
-  if (data.length === 0) {
-    return null;
   }
 
   return {
@@ -90,12 +96,23 @@ var _default = async (directory, options) => {
       metadataFN,
       metadata
     } = await (0, _readMetadataJSON.default)(workingDirectory, options.filename);
-    const metadataNew = await (0, _fileList.default)(workingDirectory, readMetadataXattr.bind(null, metadata), {
+    const bar = new _cliProgress.default.Bar({
+      format: 'progress [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} | {file}'
+    }, _cliProgress.default.Presets.shades_classic);
+    bar.start((await (0, _fileList.default)(workingDirectory, null, {
       isRecursive: options.recursive
-    }); // compact the array with results and write to disk
+    })).length, 0, {
+      file: ''
+    }); // read extended attributes from files in directory and compact the result
+
+    const metadataNew = (await (0, _fileList.default)(workingDirectory, readMetadataXattr.bind(null, metadata, options, bar), {
+      isRecursive: options.recursive
+    })).filter(obj => obj);
+    bar.stop(); // write to disk
 
     console.info(`write metadata to ${metadataFN}`);
-    await _fs.promises.writeFile(metadataFN, JSON.stringify(metadataNew === null || metadataNew === void 0 ? void 0 : metadataNew.filter(obj => obj)));
+    await _fs.promises.writeFile(metadataFN, JSON.stringify(metadataNew));
+    (0, _printReport.default)(metadataNew);
     console.timeEnd('processtime');
   } else {
     console.error(`directory ${workingDirectory} not found`);
