@@ -34,12 +34,23 @@ $ sudo npm install -g @ogim/metadata
 
 ## GIT Hooks
 
-```
-    ./git/hooks/pre-commit
-        metadata backup -r ./src
+./git/hooks/pre-commit
+```bash
+    #!/usr/bin/env bash
 
-    ./git/hooks/post-checkout
-        metadata restore -r ./src
+    PATH=$PATH:/usr/local/bin:/usr/local/sbin
+    metadata backup -r ./src
 ```
+
+
+./git/hooks/post-checkout
+```bash
+    #!/usr/bin/env bash
+
+    PATH=$PATH:/usr/local/bin:/usr/local/sbin
+    metadata restore -r ./src
+```
+
+
 
 

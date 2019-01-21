@@ -8,7 +8,7 @@ var _backup = _interopRequireDefault(require("./backup"));
 
 var _restore = _interopRequireDefault(require("./restore"));
 
-var _package = require("../package");
+var _package = require("./../package");
 
 _commander.default.version(_package.version, '-v, --version').name('metadata').description('Backup and restore metadata to files').usage('[commands] [options] directory');
 
