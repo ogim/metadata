@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="backup" type="NodeJSConfigurationType" application-parameters="backup -r" path-to-node="node" node-parameters="-r @babel/register" path-to-js-file="$PROJECT_DIR$/src/index.js" working-dir="$PROJECT_DIR$/src">
+  <configuration default="false" name="backup" type="NodeJSConfigurationType" application-parameters="backup -r " path-to-node="node" node-parameters="-r @babel/register" path-to-js-file="index.js" working-dir="$PROJECT_DIR$/src">
     <method v="2" />
   </configuration>
 </component>

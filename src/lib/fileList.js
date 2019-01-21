@@ -25,7 +25,7 @@ const crawl = async (
 	for (const file of files) {
 		const filename = path.join(dir, file);
 		const stat = await fs.stat(filename);
-		const filenameRelative = filename.substr(rootDir.length + 1);
+		const filenameRelative = filename.substr(rootDir.length);
 
 		if (stat.isDirectory()) {
 			if (options.isRecursive === true) {
@@ -55,6 +55,9 @@ export default async(
 	cb: ?Promise,
 	options: {isRecursive: ?boolean} = {},
 ): Promise<Array<all>> => {
+	// uniform dir to end on /
+	dir = path.join(dir, '/');
+
 	const paralelProcesses = await crawl(dir, cb, options);
 
 	return Promise.all(paralelProcesses);

@@ -9,6 +9,7 @@ import {optionsType} from './lib/options.type';
 import * as ea from './lib/extendedAttributes';
 import getWorkingDirectory from './lib/getWorkingDirectory';
 import readMetadataJSON from './lib/readMetadataJSON';
+import printReport from './printReport';
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -36,10 +37,12 @@ const setMetadataXattr = async (
 	for (const attr of attributes?.data || []) {
 		const {name: attrName, btoa: btoaAttrValue, ascii: asciiAttrValue} = attr;
 
-		if (options.alltags !== true && attrName !== 'com.apple.metadata:_kMDItemUserTags'){
-			//do nothing
-		}
-		else{
+		if (
+			options.alltags !== true &&
+			attrName !== 'com.apple.metadata:_kMDItemUserTags'
+		) {
+			// do nothing
+		} else {
 			const btoaAttrValueFile = btoa(
 				(await ea.getValue(attrName, filename, true)) || '',
 			);
@@ -49,7 +52,7 @@ const setMetadataXattr = async (
 					name: attrName,
 					btoa: btoaAttrValue,
 					ascii: asciiAttrValue,
-					action: 'WRITE',
+					action: 'CHANGED',
 				});
 				writeAttributesAfterClear.push(
 					ea.setValue.bind(null, attrName, atob(btoaAttrValue), filename),
@@ -75,10 +78,7 @@ const setMetadataXattr = async (
  * @param directory
  * @param options
  */
-export default async (
-	directory: string,
-	options: optionsType,
-) => {
+export default async (directory: string, options: optionsType) => {
 	const workingDirectory = await getWorkingDirectory(directory);
 
 	if (workingDirectory) {
@@ -107,15 +107,15 @@ export default async (
 		);
 
 		if (metadata != null) {
-			const report = await fileList(
+			const report = (await fileList(
 				workingDirectory,
 				setMetadataXattr.bind(null, metadata, options, bar),
 				{isRecursive: options.recursive},
-			);
+			)).filter(obj => obj);
 
 			bar.stop();
 
-			// todo present a report
+			printReport(report);
 
 			console.timeEnd('processtime');
 		} else {

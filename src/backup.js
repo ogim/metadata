@@ -9,6 +9,7 @@ import {optionsType} from './lib/options.type';
 import * as ea from './lib/extendedAttributes';
 import getWorkingDirectory from './lib/getWorkingDirectory';
 import readMetadataJSON from './lib/readMetadataJSON';
+import printReport from './printReport';
 
 /**
  * retrieves all metadata for a file and parse it as json
@@ -25,15 +26,19 @@ const readMetadataXattr = async (
 ): Promise<Object> => {
 	bar.increment(1, {file: filenameRelative});
 
+	// console.log('==>', filename);
+
 	const attributes = await ea.getAttributesList(filename),
 		data = [];
 
 	// read all attributes
 	for (const attrName of attributes) {
-		if (options.alltags !== true && attrName !== 'com.apple.metadata:_kMDItemUserTags'){
-			//do nothing
-		}
-		else if (attrName) {
+		if (
+			options.alltags !== true &&
+			attrName !== 'com.apple.metadata:_kMDItemUserTags'
+		) {
+			// do nothing
+		} else if (attrName) {
 			const test = metadata
 				?.find(entry => entry.filename === filenameRelative)
 				?.data?.find(entry => entry.name === attrName);
@@ -48,6 +53,8 @@ const readMetadataXattr = async (
 					action = 'ADD';
 				} else if (btoa(binAttrValue) !== test.btoa) {
 					action = 'CHANGED';
+				} else {
+					action = 'EQUAL';
 				}
 
 				data.push({
@@ -104,22 +111,20 @@ export default async (directory: string, options: optionsType) => {
 			},
 		);
 
-		const metadataNew = await fileList(
+		// read extended attributes from files in directory and compact the result
+		const metadataNew = (await fileList(
 			workingDirectory,
 			readMetadataXattr.bind(null, metadata, options, bar),
 			{isRecursive: options.recursive},
-		);
+		)).filter(obj => obj);
 
 		bar.stop();
 
-		// compact the array with results and write to disk
+		// write to disk
 		console.info(`write metadata to ${metadataFN}`);
-		await fs.writeFile(
-			metadataFN,
-			JSON.stringify(metadataNew?.filter(obj => obj)),
-		);
+		await fs.writeFile(metadataFN, JSON.stringify(metadataNew));
 
-		// todo present a report
+		printReport(metadataNew);
 
 		console.timeEnd('processtime');
 	} else {

@@ -20,8 +20,6 @@ export default async (directory = process.cwd()) => {
 		program.outputHelp();
 		process.exit(1);
 	}
-	program.outputHelp();
-	console.log('workingDirectory:', directory);
 
 	return directory;
 };

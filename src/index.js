@@ -16,7 +16,7 @@ program
 	.command('restore [directory]')
 	.description('Updates files with previously stored metadata from [filename]')
 	.option('-r, --recursive', 'recursive')
-	.option('-a, --alltags', 'process all extended attributes and not only all tags')
+	.option('-a, --alltags', 'process all extended attributes and not only tags')
 	.option(
 		'-f, --filename <fileName>',
 		'optionally supply the filename where the metadata is stored. Default ".metadata"',
@@ -27,7 +27,7 @@ program
 	.command('backup [directory]')
 	.description('Reads metadata of files and store this in a file [filename]')
 	.option('-r, --recursive', 'recursive')
-	.option('-t, --tags', 'process only tags')
+	.option('-a, --alltags', 'process all extended attributes and not only tags')
 	.option(
 		'-f, --filename <fileName>',
 		'optionally supply the filename where the metadata is stored. Default ".metadata"',
