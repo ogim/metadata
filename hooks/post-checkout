@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 PATH=$PATH:/usr/local/bin:/usr/local/sbin
-metadata backup -r ./learn/
+metadata restore -r ./learn/

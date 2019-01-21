@@ -3,7 +3,7 @@
 import program from 'commander';
 import backup from './backup';
 import restore from './restore';
-import {version} from '../package';
+import {version} from './../package';
 
 program
 	.version(version, '-v, --version')
