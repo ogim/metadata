@@ -21,5 +21,8 @@ export default (data: Array) => {
 		nrOfAttributesChanged === 0
 	) {
 		console.info(`no extended attributes are found or have changed`);
+		return false
 	}
+	return true;
+
 };

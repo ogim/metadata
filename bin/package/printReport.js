@@ -15,7 +15,10 @@ var _default = data => {
 
   if (nrOfFilesProcessed > 0 && nrOfAttributesAdded === 0 && nrOfAttributesChanged === 0) {
     console.info(`no extended attributes are found or have changed`);
+    return false;
   }
+
+  return true;
 };
 
 exports.default = _default;
