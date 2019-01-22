@@ -108,11 +108,14 @@ var _default = async (directory, options) => {
     const metadataNew = (await (0, _fileList.default)(workingDirectory, readMetadataXattr.bind(null, metadata, options, bar), {
       isRecursive: options.recursive
     })).filter(obj => obj);
-    bar.stop(); // write to disk
+    bar.stop();
 
-    console.info(`write metadata to ${metadataFN}`);
-    await _fs.promises.writeFile(metadataFN, JSON.stringify(metadataNew));
-    (0, _printReport.default)(metadataNew);
+    if ((0, _printReport.default)(metadataNew)) {
+      // write to disk
+      console.info(`write metadata to ${metadataFN}`);
+      await _fs.promises.writeFile(metadataFN, JSON.stringify(metadataNew));
+    }
+
     console.timeEnd('processtime');
   } else {
     console.error(`directory ${workingDirectory} not found`);
