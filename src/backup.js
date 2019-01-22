@@ -113,11 +113,11 @@ export default async (directory: string, options: optionsType) => {
 
 		bar.stop();
 
-		// write to disk
-		console.info(`write metadata to ${metadataFN}`);
-		await fs.writeFile(metadataFN, JSON.stringify(metadataNew));
-
-		printReport(metadataNew);
+		if (printReport(metadataNew)){
+			// write to disk
+			console.info(`write metadata to ${metadataFN}`);
+			await fs.writeFile(metadataFN, JSON.stringify(metadataNew));
+		}
 
 		console.timeEnd('processtime');
 	} else {
